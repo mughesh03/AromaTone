@@ -1,5 +1,5 @@
 Trae AI Hackathon
-https://aroma-tone-ptl9etphp-annamaria9coders-projects.vercel.app/
+https://aroma-tone.vercel.app/
 
 # React + Vite
 
