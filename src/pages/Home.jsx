@@ -45,7 +45,7 @@ const Home = () => {
             AromaTone combines your love for cooking with personalized ambience, automatic recording, and smart recipe suggestions.
           </p>
           <Link 
-            to="/setup" 
+            to="/signup" 
             className="apple-button text-lg px-8 py-3 rounded-xl inline-block"
           >
             Start Cooking
@@ -114,7 +114,7 @@ const Home = () => {
             to make cooking more enjoyable and shareable.
           </p>
           <Link 
-            to="/setup" 
+            to="/signup" 
             className="apple-button text-lg px-8 py-3 rounded-xl inline-block"
           >
             Get Started

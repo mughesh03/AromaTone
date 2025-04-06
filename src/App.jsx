@@ -5,6 +5,7 @@ import './App.css'
 
 // Pages
 import Home from './pages/Home'
+import Signup from './pages/Signup'
 import RecipeSetup from './pages/RecipeSetup'
 import CookingSession from './pages/CookingSession'
 
@@ -19,6 +20,7 @@ function App() {
       >
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/setup" element={<RecipeSetup />} />
           <Route path="/cooking" element={<CookingSession />} />
         </Routes>
