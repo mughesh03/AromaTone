@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SelectableCard from './SelectableCard'
+import Webcam from 'react-webcam'
 
 const RecipeSetupFlow = ({ onComplete }) => {
   const [step, setStep] = useState(1)
@@ -10,6 +11,8 @@ const RecipeSetupFlow = ({ onComplete }) => {
     availableIngredients: [],
     selectedRecipe: null
   })
+  const [showCamera, setShowCamera] = useState(false)
+  const webcamRef = useRef(null)
   const [generatedRecipes, setGeneratedRecipes] = useState([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -226,19 +229,53 @@ const RecipeSetupFlow = ({ onComplete }) => {
             <h2 className="text-3xl font-bold">What ingredients do you have?</h2>
             <p className="text-gray-600">List the main ingredients you'd like to use.</p>
             <div className="space-y-4">
-              <textarea
-                value={preferences.availableIngredients.join('\n')}
-                onChange={(e) => handleInputChange('availableIngredients', e.target.value.split('\n').filter(Boolean))}
-                placeholder="Enter each ingredient on a new line"
-                className="w-full h-40 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-apple-blue focus:border-transparent"
-              />
-              <button
-                onClick={generateRecipes}
-                disabled={preferences.availableIngredients.length === 0 || isLoading}
-                className="w-full px-6 py-3 bg-apple-blue text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Generating Recipes...' : 'Generate Recipes'}
-              </button>
+              {showCamera ? (
+                <div className="relative">
+                  <Webcam
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    className="w-full rounded-lg"
+                  />
+                  <button
+                    onClick={() => {
+                      const imageSrc = webcamRef.current.getScreenshot();
+                      // Here we would normally send this image to an AI service for ingredient recognition
+                      // For demo, we'll just simulate recognizing a frozen pizza
+                      handleInputChange('availableIngredients', ['Frozen Pizza']);
+                      setShowCamera(false);
+                    }}
+                    className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-2 bg-apple-blue text-white rounded-full hover:bg-blue-600 transition-colors"
+                  >
+                    Capture Ingredients
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <textarea
+                    value={preferences.availableIngredients.join('\n')}
+                    onChange={(e) => handleInputChange('availableIngredients', e.target.value.split('\n').filter(Boolean))}
+                    placeholder="Enter each ingredient on a new line"
+                    className="w-full h-40 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-apple-blue focus:border-transparent"
+                  />
+                  <button
+                    onClick={() => setShowCamera(true)}
+                    className="w-full px-6 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors mb-2 flex items-center justify-center"
+                  >
+                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Scan Ingredients with Camera
+                  </button>
+                  <button
+                    onClick={generateRecipes}
+                    disabled={preferences.availableIngredients.length === 0 || isLoading}
+                    className="w-full px-6 py-3 bg-apple-blue text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? 'Generating Recipes...' : 'Generate Recipes'}
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
