@@ -388,9 +388,9 @@ const Signup = () => {
       setShowSuccess(true)
       setShowConfetti(true)
       
-      // Navigate to recipe setup page after showing success
+      // Navigate to dashboard page after showing success
       setTimeout(() => {
-        navigate('/setup')
+        navigate('/dashboard')
       }, 2500)
     }, 1500)
   }
