@@ -24,7 +24,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/setup" element={<RecipeSetup />} />
-          <Route path="/cooking" element={<CookingSession />} />
+          <Route path="/cooking-session" element={<CookingSession />} />
         </Routes>
       </motion.div>
     </Router>
