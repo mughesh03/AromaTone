@@ -1,7 +1,38 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Webcam from 'react-webcam'
+
+// Components
+import RecipeSetupFlow from '../components/RecipeSetupFlow'
+import VoiceNarrator from '../components/VoiceNarrator'
+
+// Recipe data structure
+const recipeData = {
+  title: "Creamy Garlic Parmesan Pasta",
+  image: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
+  prepTime: "10 mins",
+  cookTime: "20 mins",
+  servings: 4,
+  ingredients: [
+    "8 oz fettuccine pasta",
+    "2 tbsp olive oil",
+    "4 cloves garlic, minced",
+    "1 cup heavy cream",
+    "1 cup grated Parmesan cheese",
+    "Salt and pepper to taste",
+    "Fresh parsley for garnish"
+  ],
+  steps: [
+    "Bring a large pot of salted water to a boil. Add pasta and cook according to package directions until al dente.",
+    "While pasta is cooking, heat olive oil in a large skillet over medium heat. Add minced garlic and sauté until fragrant, about 1 minute.",
+    "Pour in heavy cream and bring to a simmer. Cook for 3-4 minutes until slightly thickened.",
+    "Reduce heat to low and gradually whisk in Parmesan cheese until melted and smooth.",
+    "Season with salt and pepper to taste.",
+    "Drain pasta and add directly to the sauce, tossing to coat evenly.",
+    "Serve immediately, garnished with fresh parsley and additional Parmesan if desired."
+  ]
+}
 
 const CookingSession = () => {
   const navigate = useNavigate()
@@ -12,130 +43,145 @@ const CookingSession = () => {
   const [currentStep, setCurrentStep] = useState(0)
   const [timer, setTimer] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [setupComplete, setSetupComplete] = useState(false)
+  const [recipe, setRecipe] = useState(recipeData)
+  const [mood, setMood] = useState('')
+  const [currentNarration, setCurrentNarration] = useState('')
+  const [isNarrating, setIsNarrating] = useState(false)
+
+  // Handle recipe setup completion
+  const handleSetupComplete = (preferences) => {
+    setRecipe(preferences.selectedRecipe)
+    setMood(preferences.mood)
+    setSetupComplete(true)
+  }
+
+  // Handle narration completion
+  const handleNarrationComplete = () => {
+    setIsNarrating(false)
+    setCurrentNarration('')
+  }
+
+
+// Mock ambience data - in a real app, this would come from context/state
+const ambience = {
+  type: "music",
+  source: "Jazz Cooking Playlist",
+  audioUrl: "https://example.com/jazz-cooking-playlist.mp3" // This would be a real URL in production
+}
+
+// Timer effect
+useEffect(() => {
+  let interval = null;
+  if (isRecording) {
+    interval = setInterval(() => {
+      setTimer(seconds => seconds + 1);
+    }, 1000);
+  } else if (!isRecording && timer !== 0) {
+    clearInterval(interval);
+  }
+  return () => clearInterval(interval);
+}, [isRecording, timer]);
+
+// Format timer to MM:SS
+const formatTime = (time) => {
+  const minutes = Math.floor(time / 60);
+  const seconds = time % 60;
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Handle recording start/stop
+const handleStartRecording = () => {
+  setRecordedChunks([]);
+  setIsRecording(true);
   
-  // Mock recipe data - in a real app, this would come from context/state
-  const recipe = {
-    title: "Creamy Garlic Parmesan Pasta",
-    image: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-    prepTime: "10 mins",
-    cookTime: "20 mins",
-    servings: 4,
-    ingredients: [
-      "8 oz fettuccine pasta",
-      "2 tbsp olive oil",
-      "4 cloves garlic, minced",
-      "1 cup heavy cream",
-      "1 cup grated Parmesan cheese",
-      "Salt and pepper to taste",
-      "Fresh parsley for garnish"
-    ],
-    steps: [
-      "Bring a large pot of salted water to a boil. Add pasta and cook according to package directions until al dente.",
-      "While pasta is cooking, heat olive oil in a large skillet over medium heat. Add minced garlic and sauté until fragrant, about 1 minute.",
-      "Pour in heavy cream and bring to a simmer. Cook for 3-4 minutes until slightly thickened.",
-      "Reduce heat to low and gradually whisk in Parmesan cheese until melted and smooth.",
-      "Season with salt and pepper to taste.",
-      "Drain pasta and add directly to the sauce, tossing to coat evenly.",
-      "Serve immediately, garnished with fresh parsley and additional Parmesan if desired."
-    ]
+  // In a real app, we would start the media recorder here
+  // This is a simplified version for demonstration
+  if (webcamRef.current && webcamRef.current.stream) {
+    mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
+      mimeType: "video/webm"
+    });
+    mediaRecorderRef.current.addEventListener(
+      "dataavailable",
+      handleDataAvailable
+    );
+    mediaRecorderRef.current.start();
   }
+};
 
-  // Mock ambience data - in a real app, this would come from context/state
-  const ambience = {
-    type: "music",
-    source: "Jazz Cooking Playlist",
-    audioUrl: "https://example.com/jazz-cooking-playlist.mp3" // This would be a real URL in production
+const handleDataAvailable = ({ data }) => {
+  if (data.size > 0) {
+    setRecordedChunks((prev) => prev.concat(data));
   }
+};
 
-  // Timer effect
-  useEffect(() => {
-    let interval = null;
-    if (isRecording) {
-      interval = setInterval(() => {
-        setTimer(seconds => seconds + 1);
-      }, 1000);
-    } else if (!isRecording && timer !== 0) {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isRecording, timer]);
-
-  // Format timer to MM:SS
-  const formatTime = (time) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+const handleStopRecording = () => {
+  setIsRecording(false);
+  
+  // In a real app, we would stop the media recorder here
+  if (mediaRecorderRef.current) {
+    mediaRecorderRef.current.stop();
   }
+};
 
-  // Handle recording start/stop
-  const handleStartRecording = () => {
-    setRecordedChunks([]);
-    setIsRecording(true);
-    
-    // In a real app, we would start the media recorder here
-    // This is a simplified version for demonstration
-    if (webcamRef.current && webcamRef.current.stream) {
-      mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
-        mimeType: "video/webm"
-      });
-      mediaRecorderRef.current.addEventListener(
-        "dataavailable",
-        handleDataAvailable
-      );
-      mediaRecorderRef.current.start();
-    }
-  };
+// Handle downloading the recorded video
+const handleDownload = () => {
+  if (recordedChunks.length) {
+    const blob = new Blob(recordedChunks, {
+      type: "video/webm"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    document.body.appendChild(a);
+    a.style = "display: none";
+    a.href = url;
+    a.download = `aromatone-cooking-${Date.now()}.webm`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+};
 
-  const handleDataAvailable = ({ data }) => {
-    if (data.size > 0) {
-      setRecordedChunks((prev) => prev.concat(data));
-    }
-  };
+// Handle playing/pausing ambience
+const toggleAmbience = () => {
+  setIsPlaying(!isPlaying);
+  // In a real app, we would play/pause the audio here
+};
 
-  const handleStopRecording = () => {
-    setIsRecording(false);
-    
-    // In a real app, we would stop the media recorder here
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-    }
-  };
+// Handle moving to next/previous recipe step
+const goToNextStep = () => {
+  if (currentStep < recipe.steps.length - 1) {
+    const nextStep = currentStep + 1;
+    setCurrentStep(nextStep);
+    setCurrentNarration(recipe.steps[nextStep]);
+    setIsNarrating(true);
+  }
+};
 
-  // Handle downloading the recorded video
-  const handleDownload = () => {
-    if (recordedChunks.length) {
-      const blob = new Blob(recordedChunks, {
-        type: "video/webm"
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      document.body.appendChild(a);
-      a.style = "display: none";
-      a.href = url;
-      a.download = `aromatone-cooking-${Date.now()}.webm`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    }
-  };
+const goToPrevStep = () => {
+  if (currentStep > 0) {
+    const prevStep = currentStep - 1;
+    setCurrentStep(prevStep);
+    setCurrentNarration(recipe.steps[prevStep]);
+    setIsNarrating(true);
+  }
+};
 
-  // Handle playing/pausing ambience
-  const toggleAmbience = () => {
-    setIsPlaying(!isPlaying);
-    // In a real app, we would play/pause the audio here
-  };
+// Start narration when first loading the recipe
+useEffect(() => {
+  if (setupComplete && recipe?.steps?.length > 0) {
+    setCurrentNarration(recipe.steps[0]);
+    setIsNarrating(true);
+  }
+}, [setupComplete, recipe]);
 
-  // Handle moving to next/previous recipe step
-  const goToNextStep = () => {
-    if (currentStep < recipe.steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const goToPrevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+// If no recipe is selected yet, show the setup flow
+if (!setupComplete) {
+  return (
+    <div className="min-h-screen bg-apple-gray p-8">
+      <RecipeSetupFlow onComplete={handleSetupComplete} />
+    </div>
+  )
+}
 
   return (
     <div className="min-h-screen bg-apple-gray flex flex-col">
@@ -174,6 +220,14 @@ const CookingSession = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
+        {/* Voice Narrator Component */}
+        <VoiceNarrator
+          text={currentNarration}
+          mood={mood}
+          isPlaying={isNarrating}
+          onPlaybackComplete={handleNarrationComplete}
+        />
+
         {/* Left Panel - Recipe */}
         <div className="w-1/3 bg-white p-6 overflow-y-auto">
           <div className="mb-6">
@@ -289,7 +343,7 @@ const CookingSession = () => {
                   className="bg-apple-blue hover:bg-opacity-90 text-white p-3 rounded-full"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L16 16.5m0 0L7.5 12m4.5 4.5V3" />
                   </svg>
                 </button>
               )}

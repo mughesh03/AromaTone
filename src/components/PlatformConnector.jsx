@@ -1,10 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import LoadingSpinner from './LoadingSpinner'
+import { generateOAuthUrl, handleOAuthCallback, getUserProfile, getUserPlaylists } from '../utils/oauth'
 
 const PlatformConnector = ({ platform, onConnect, isConnected = false }) => {
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState(null)
+  const [userProfile, setUserProfile] = useState(null)
+  const [playlists, setPlaylists] = useState([])
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null)
+
+  useEffect(() => {
+    // Check if we're handling an OAuth callback
+    const urlParams = new URLSearchParams(window.location.search)
+    const code = urlParams.get('code')
+    const state = urlParams.get('state')
+    const storedState = localStorage.getItem(`${platform}_auth_state`)
+
+    if (code && state === storedState) {
+      handleOAuthCallback(platform, code)
+        .then(() => loadUserData())
+        .catch(err => setError('Authentication failed. Please try again.'))
+    }
+  }, [])
+
+  const loadUserData = async () => {
+    try {
+      const profile = await getUserProfile(platform)
+      setUserProfile(profile)
+      const userPlaylists = await getUserPlaylists(platform)
+      setPlaylists(userPlaylists.items || [])
+      onConnect(platform)
+    } catch (err) {
+      setError('Failed to load user data')
+      console.error(err)
+    }
+  }
 
   const handleConnect = async () => {
     if (isConnected) return
@@ -12,13 +43,22 @@ const PlatformConnector = ({ platform, onConnect, isConnected = false }) => {
     setConnecting(true)
     setError(null)
     
-    // Simulate API connection
-    // In a real app, this would be replaced with actual OAuth flow
-    setTimeout(() => {
+    try {
+      const authUrl = generateOAuthUrl(platform)
+      window.location.href = authUrl
+    } catch (err) {
       setConnecting(false)
-      // Simulate successful connection
-      onConnect(platform)
-    }, 2000)
+      setError('Failed to initialize authentication. Please try again.')
+      console.error(err)
+    }
+  }
+
+  const handlePlaylistSelect = (playlist) => {
+    setSelectedPlaylist(playlist)
+    onConnect(platform, { 
+      profile: userProfile,
+      playlist: playlist
+    })
   }
 
   const getPlatformDetails = () => {
@@ -28,16 +68,16 @@ const PlatformConnector = ({ platform, onConnect, isConnected = false }) => {
           name: 'Spotify',
           icon: '🎵',
           color: '#1DB954',
-          connectText: 'Connect to Spotify',
-          connectedText: 'Connected to Spotify',
+          connectText: 'Connect your Spotify account',
+          connectedText: userProfile ? `Connected as ${userProfile.display_name || userProfile.id}` : 'Connected to Spotify',
         }
       case 'youtube':
         return {
           name: 'YouTube',
           icon: '📺',
           color: '#FF0000',
-          connectText: 'Connect to YouTube',
-          connectedText: 'Connected to YouTube',
+          connectText: 'Connect your YouTube account',
+          connectedText: userProfile ? `Connected as ${userProfile.snippet?.title || 'YouTube User'}` : 'Connected to YouTube',
         }
       default:
         return {
@@ -54,11 +94,15 @@ const PlatformConnector = ({ platform, onConnect, isConnected = false }) => {
 
   return (
     <motion.div
-      className={`relative overflow-hidden rounded-xl border ${isConnected ? 'border-green-500 bg-green-50' : 'border-gray-300'} p-4`}
+      className="relative overflow-hidden rounded-xl border shadow-sm"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
       whileHover={{ scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 300 }}
     >
-      <div className="flex items-center">
+      <div className={`p-4 ${isConnected ? 'bg-green-50' : 'bg-white'}`}>
+        <div className="flex items-center">
         <div 
           className="flex items-center justify-center w-12 h-12 rounded-full mr-4"
           style={{ backgroundColor: `${platformDetails.color}20` }}
@@ -91,11 +135,29 @@ const PlatformConnector = ({ platform, onConnect, isConnected = false }) => {
         )}
       </div>
 
-      {error && (
+        {error && (
         <div className="mt-2 text-sm text-red-500">
           {error}
         </div>
       )}
+
+        {isConnected && playlists.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-sm font-medium mb-2">Select a Playlist</h4>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {playlists.map(playlist => (
+                <button
+                  key={playlist.id}
+                  onClick={() => handlePlaylistSelect(playlist)}
+                  className={`w-full text-left p-2 rounded-lg text-sm transition-colors ${selectedPlaylist?.id === playlist.id ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+                >
+                  {playlist.name || playlist.snippet?.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Connection animation */}
       {connecting && (

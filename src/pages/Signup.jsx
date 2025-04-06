@@ -11,6 +11,7 @@ import StepIndicator from '../components/StepIndicator'
 import PlatformConnector from '../components/PlatformConnector'
 import SelectableCard from '../components/SelectableCard'
 import ConfettiEffect from '../components/ConfettiEffect'
+import BudgetPreferences from '../components/BudgetPreferences'
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
@@ -75,24 +76,36 @@ const PersonalDetailsStep = ({ formData, handleChange }) => {
 // Step 2: Music Preferences
 const MusicPreferencesStep = ({ formData, handleChange, handleCheckboxChange }) => {
   const [platformConnected, setPlatformConnected] = useState(false)
+  const [selectedPlatformData, setSelectedPlatformData] = useState(null)
   
   const musicGenres = [
     'Pop', 'Rock', 'Hip Hop', 'R&B', 'Jazz', 'Classical', 'Electronic', 'Country', 'Folk', 'Indie'
   ]
   
-  const handlePlatformConnect = (platform) => {
+  const handlePlatformConnect = (platform, data) => {
     handleChange({ target: { name: 'musicPlatform', value: platform } })
+    if (data?.playlist) {
+      handleChange({ 
+        target: { 
+          name: 'playlist', 
+          value: platform === 'spotify' 
+            ? `https://open.spotify.com/playlist/${data.playlist.id}`
+            : `https://www.youtube.com/playlist?list=${data.playlist.id}`
+        } 
+      })
+    }
+    setSelectedPlatformData(data)
     setPlatformConnected(true)
   }
   
   return (
     <motion.div variants={itemVariants} className="flex-1 flex flex-col">
       <h2 className="text-3xl font-bold mb-6">Music Preferences</h2>
-      <p className="text-gray-600 mb-8">Tell us about your music taste to enhance your cooking experience.</p>
+      <p className="text-gray-600 mb-8">Connect your music account and customize your cooking soundtrack.</p>
       
       <div className="space-y-6 flex-1">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">Preferred Music Platform</label>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Connect Your Music Account</label>
           <div className="grid grid-cols-1 gap-4">
             <PlatformConnector 
               platform="spotify" 
@@ -106,6 +119,22 @@ const MusicPreferencesStep = ({ formData, handleChange, handleCheckboxChange }) 
               isConnected={formData.musicPlatform === 'youtube'} 
             />
           </div>
+          {selectedPlatformData?.profile && (
+            <div className="mt-4 p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-green-800">
+                    Successfully connected as {selectedPlatformData.profile.display_name || selectedPlatformData.profile.snippet?.title}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         <div>
@@ -121,20 +150,19 @@ const MusicPreferencesStep = ({ formData, handleChange, handleCheckboxChange }) 
               />
             ))}
           </div>
+          <p className="mt-2 text-sm text-gray-500">
+            Select your favorite genres to personalize your cooking playlist recommendations
+          </p>
         </div>
         
-        <div>
-          <label htmlFor="playlist" className="block text-sm font-medium text-gray-700 mb-1">Favorite Playlist URL (Optional)</label>
-          <input
-            type="text"
-            id="playlist"
-            name="playlist"
-            value={formData.playlist}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-apple-blue focus:border-transparent"
-            placeholder="https://open.spotify.com/playlist/..."
-          />
-        </div>
+        {selectedPlatformData?.playlist && (
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-900">Selected Playlist</h4>
+            <p className="mt-1 text-sm text-gray-500">
+              {selectedPlatformData.playlist.name || selectedPlatformData.playlist.snippet?.title}
+            </p>
+          </div>
+        )}
       </div>
     </motion.div>
   )
@@ -192,12 +220,22 @@ const RecipePreferencesStep = ({ formData, handleChange, handleCheckboxChange })
 
 // Step 4: Budget Preferences
 const BudgetPreferencesStep = ({ formData, handleChange }) => {
+  const handleBudgetSet = (budgetData) => {
+    handleChange({
+      target: {
+        name: 'budgetPreference',
+        value: budgetData
+      }
+    })
+  }
+
   return (
     <motion.div variants={itemVariants} className="flex-1 flex flex-col">
       <h2 className="text-3xl font-bold mb-6">Budget Preferences</h2>
-      <p className="text-gray-600 mb-8">Let us know your budget range for cooking ingredients.</p>
+      <p className="text-gray-600 mb-8">Help us tailor recipe recommendations to your budget.</p>
       
       <div className="space-y-6 flex-1">
+        <BudgetPreferences onBudgetSet={handleBudgetSet} />
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">Budget Range</label>
           <div className="grid grid-cols-3 gap-4">
