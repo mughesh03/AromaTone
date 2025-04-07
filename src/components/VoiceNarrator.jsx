@@ -1,8 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { textToSpeech } from '../utils/novitaAI'
 
-const VoiceNarrator = ({ text, mood, isPlaying, onPlaybackComplete }) => {
-  const [isNarrating, setIsNarrating] = useState(false)
+const VoiceNarrator = ({ text, onComplete, options = {}, mood = 'Relaxed' }) => {
+  const [isPlaying, setIsPlaying] = useState(false)
   const [audioUrl, setAudioUrl] = useState(null)
+  const [error, setError] = useState(null)
+  const [isNarrating, setIsNarrating] = useState(false)
   const audioRef = useRef(null)
   const backgroundMusicRef = useRef(null)
 

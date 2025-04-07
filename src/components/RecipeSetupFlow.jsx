@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SelectableCard from './SelectableCard'
 import Webcam from 'react-webcam'
+import { generateRecipeSuggestions } from '../utils/novitaAI'
 
 const RecipeSetupFlow = ({ onComplete }) => {
   const [step, setStep] = useState(1)
@@ -62,8 +63,12 @@ const RecipeSetupFlow = ({ onComplete }) => {
   const generateRecipes = async () => {
     setIsLoading(true)
     try {
-      // TODO: Integrate with Novita's LLM API
-      // This is a mock response
+      const recipes = await generateRecipeSuggestions(preferences)
+      setGeneratedRecipes(recipes)
+      setStep(4) // Move to recipe selection step
+    } catch (error) {
+      console.error('Failed to generate recipes:', error)
+      // Fallback to mock recipes for demonstration
       const mockRecipes = [
         {
           id: 1,
@@ -149,8 +154,6 @@ const RecipeSetupFlow = ({ onComplete }) => {
       ]
       setGeneratedRecipes(mockRecipes)
       setStep(4) // Move to recipe selection step
-    } catch (error) {
-      console.error('Failed to generate recipes:', error)
     } finally {
       setIsLoading(false)
     }

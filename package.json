@@ -4,17 +4,24 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"node server.js\"",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node server.js"
   },
   "dependencies": {
+    "concurrently": "^8.2.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
     "@headlessui/react": "^2.2.1",
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/forms": "^0.5.10",
     "autoprefixer": "^10.4.21",
     "framer-motion": "^12.6.3",
+    "openai": "^4.91.1",
     "postcss": "^8.4.31",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
